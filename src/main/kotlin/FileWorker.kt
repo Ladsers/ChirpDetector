@@ -5,7 +5,7 @@ import java.nio.ByteOrder
 
 object FileWorker {
 
-    fun read(filepath: String): MutableList<IQsample>? {
+    fun read(filepath: String): IQSamples? {
         val debugUtilities = DebugUtilities("readFile")
         debugUtilities.timeStart()
 
@@ -15,7 +15,7 @@ object FileWorker {
         return res
     }
 
-    fun write(samples: List<IQsample>, filepath: String): Boolean {
+    fun write(samples: IQSamples, filepath: String): Boolean {
         val debugUtilities = DebugUtilities("writeFile")
         debugUtilities.timeStart()
 
@@ -25,7 +25,7 @@ object FileWorker {
         return res
     }
 
-    private fun readerBinary(filepath: String): MutableList<IQsample>? {
+    private fun readerBinary(filepath: String): IQSamples? {
         try {
             val fileInput = FileInputStream(filepath).channel
             val dataSize = fileInput.size().toInt()
@@ -38,12 +38,14 @@ object FileWorker {
             val floatBuffer = byteBuffer.asFloatBuffer()
             floatBuffer.get(floatsArr)
 
-            val samples = mutableListOf<IQsample>()
-            for (i in 0..floatsArr.lastIndex step 2) {
-                samples.add(IQsample(floatsArr[i], floatsArr[i + 1]))
+            val samplesI = FloatArray(floatsArr.size / 2)
+            val samplesQ = FloatArray(floatsArr.size / 2)
+            for (i in 0..samplesI.lastIndex) {
+                samplesI[i] = floatsArr[i * 2]
+                samplesQ[i] = floatsArr[i * 2 + 1]
             }
 
-            return samples
+            return IQSamples(samplesI, samplesQ)
         }
         catch (e: Exception) {
             e.printStackTrace()
@@ -52,13 +54,12 @@ object FileWorker {
         }
     }
 
-    private fun writerBinary(samples: List<IQsample>, filepath: String): Boolean {
+    private fun writerBinary(samples: IQSamples, filepath: String): Boolean {
         try {
             val floatsArr = FloatArray(samples.size * 2)
-            var i = 0
-            for (s in samples) {
-                floatsArr[i++] = s.i
-                floatsArr[i++] = s.q
+            for (i in 0..samples.lastIndex) {
+                floatsArr[i * 2] = samples.i[i]
+                floatsArr[i * 2 + 1] = samples.q[i]
             }
 
             val dataSize = floatsArr.size * Float.SIZE_BYTES
