@@ -1,3 +1,4 @@
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -5,21 +6,36 @@ import java.nio.ByteOrder
 
 object FileWorker {
 
-    fun read(filepath: String): IQSamples? {
-        val debugUtilities = DebugUtilities("readFile")
+    enum class FileType {
+        BINARY,
+        TEXT_TABLE /* i-sample'\t'q-sample'\n' */,
+        TEXT_TABLE_I_SAMPLES /* i-sample'\n' */,
+        TEXT_TABLE_Q_SAMPLES /* q-sample'\n' */
+    }
+
+    fun read(type: FileType, filepath: String): IQSamples? {
+        val debugUtilities = DebugUtilities("FileWorker.readFile")
         debugUtilities.timeStart()
 
-        val res = readerBinary(filepath)
+        val res = when (type) {
+            FileType.BINARY -> readerBinary(filepath)
+            FileType.TEXT_TABLE -> readerTextTable(filepath)
+            FileType.TEXT_TABLE_I_SAMPLES, FileType.TEXT_TABLE_Q_SAMPLES -> readerTextTable(filepath) // for writing only
+        }
 
         debugUtilities.timeStop()
         return res
     }
 
-    fun write(samples: IQSamples, filepath: String): Boolean {
-        val debugUtilities = DebugUtilities("writeFile")
+    fun write(type: FileType, samples: IQSamples, filepath: String): Boolean {
+        val debugUtilities = DebugUtilities("FileWorker.writeFile")
         debugUtilities.timeStart()
 
-        val res = writerBinary(samples, filepath)
+        val res = when (type) {
+            FileType.BINARY -> writerBinary(samples, filepath)
+            FileType.TEXT_TABLE, FileType.TEXT_TABLE_I_SAMPLES, FileType.TEXT_TABLE_Q_SAMPLES ->
+                writerTextTable(type, samples, filepath)
+        }
 
         debugUtilities.timeStop()
         return res
@@ -46,8 +62,7 @@ object FileWorker {
             }
 
             return IQSamples(samplesI, samplesQ)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
             //TODO: сделать логи
             return null
@@ -73,8 +88,66 @@ object FileWorker {
             out.close()
 
             return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            //TODO: сделать логи
+            return false
         }
-        catch (e: Exception) {
+    }
+
+    private fun readerTextTable(filepath: String): IQSamples? {
+        try {
+            val lines = File(filepath).bufferedReader().readLines()
+            val samplesI = FloatArray(lines.size)
+            val samplesQ = FloatArray(lines.size)
+
+            for ((k, line) in lines.withIndex()) {
+                val values = line.split("\t")
+                samplesI[k] = values[0].replace(',', '.').toFloat()
+                samplesQ[k] = values[1].replace(',', '.').toFloat()
+            }
+
+            return IQSamples(samplesI, samplesQ)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            //TODO: сделать логи
+            return null
+        }
+    }
+
+    private fun writerTextTable(type: FileType, samples: IQSamples, filepath: String): Boolean {
+        try {
+            val outStr: String
+            when (type) {
+                FileType.TEXT_TABLE -> {
+                    val strsI =
+                        samples.i.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+                    val strsQ =
+                        samples.q.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+                    outStr = buildString {
+                        for (k in 0..strsI.lastIndex) append(strsI[k] + '\t' + strsQ[k] + '\n')
+                    }
+                }
+                FileType.TEXT_TABLE_I_SAMPLES -> {
+                    val strsI =
+                        samples.i.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+                    outStr = buildString {
+                        for (k in 0..strsI.lastIndex) append(strsI[k] + '\n')
+                    }
+                }
+                FileType.TEXT_TABLE_Q_SAMPLES -> {
+                    val strsQ =
+                        samples.q.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+                    outStr = buildString {
+                        for (k in 0..strsQ.lastIndex) append(strsQ[k] + '\n')
+                    }
+                }
+                else -> return false
+            }
+            File(filepath).bufferedWriter().use { out -> out.write(outStr.dropLast(1)) }
+
+            return true
+        } catch (e: Exception) {
             e.printStackTrace()
             //TODO: сделать логи
             return false

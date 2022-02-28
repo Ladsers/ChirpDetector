@@ -1,3 +1,5 @@
 const val DEBUG_MODE = true
 
-var SAMPLE_RATE = -1
+const val COMMA_INSTEAD_DOT = true
+
+var SAMPLE_RATE = 1500000
