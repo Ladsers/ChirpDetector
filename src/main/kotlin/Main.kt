@@ -1,7 +1,7 @@
 fun main(args: Array<String>) {
     println("Program arguments: ${args.joinToString()}")
 
-    TestRoom.run()
+    TestRoom.run() //remove line
 
     /*if (args.isNotEmpty()) {
         when (args[0]) {

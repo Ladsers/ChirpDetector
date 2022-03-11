@@ -18,5 +18,8 @@ gradle-app.setting
 # Cache of project
 .gradletasknamecache
 
-#libs
+# Libs
 libs/
+
+# Project files
+/src/main/kotlin/TestRoom.kt
