@@ -45,7 +45,20 @@ object FileWorker {
         val debugUtilities = DebugUtilities("FileWorker.writeResults")
         debugUtilities.timeStart()
 
-        val res = writerResults(data, filepath, separator)
+        val dataList =
+            data.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+        val res = writerResults(dataList, filepath, separator)
+
+        debugUtilities.timeStop()
+        return res
+    }
+
+    fun writeResults(data: IntArray, filepath: String, separator: String = "\n"): Boolean {
+        val debugUtilities = DebugUtilities("FileWorker.writeResults")
+        debugUtilities.timeStart()
+
+        val dataList = data.map { it.toString() }
+        val res = writerResults(dataList, filepath, separator)
 
         debugUtilities.timeStop()
         return res
@@ -164,12 +177,10 @@ object FileWorker {
         }
     }
 
-    private fun writerResults(data: FloatArray, filepath: String, separator: String): Boolean {
+    private fun writerResults(dataList: List<String>, filepath: String, separator: String): Boolean {
         return try {
-            val dataStrs =
-                data.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
             val outStr = buildString {
-                for (k in 0..dataStrs.lastIndex) append(dataStrs[k] + separator)
+                for (k in 0..dataList.lastIndex) append(dataList[k] + separator)
             }
             File(filepath).bufferedWriter().use { out -> out.write(outStr.dropLast(1)) }
 
