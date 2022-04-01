@@ -41,6 +41,16 @@ object FileWorker {
         return res
     }
 
+    fun writeResults(data: FloatArray, filepath: String, separator: String = "\n"): Boolean {
+        val debugUtilities = DebugUtilities("FileWorker.writeResults")
+        debugUtilities.timeStart()
+
+        val res = writerResults(data, filepath, separator)
+
+        debugUtilities.timeStop()
+        return res
+    }
+
     private fun readerBinary(filepath: String): IQSamples? {
         try {
             val fileInput = FileInputStream(filepath).channel
@@ -151,6 +161,23 @@ object FileWorker {
             e.printStackTrace()
             //TODO: сделать логи
             return false
+        }
+    }
+
+    private fun writerResults(data: FloatArray, filepath: String, separator: String): Boolean {
+        return try {
+            val dataStrs =
+                data.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+            val outStr = buildString {
+                for (k in 0..dataStrs.lastIndex) append(dataStrs[k] + separator)
+            }
+            File(filepath).bufferedWriter().use { out -> out.write(outStr.dropLast(1)) }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            //TODO: сделать логи
+            false
         }
     }
 }
