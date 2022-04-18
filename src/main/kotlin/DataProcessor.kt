@@ -1,3 +1,6 @@
+import kotlin.math.abs
+import kotlin.math.ceil
+
 object DataProcessor {
 
     fun cutFrom(signal: IQSamples, secs: Float): IQSamples? {
@@ -67,6 +70,55 @@ object DataProcessor {
 
     fun getDuration(signal: IQSamples): Float {
         return signal.size / SAMPLE_RATE.toFloat()
+    }
+
+    fun downsample(signal: IQSamples, newSamleRate: Int): IQSamples? {
+        val debugUtilities = DebugUtilities("DataProcessor.downsample")
+        debugUtilities.timeStart()
+
+        if (SAMPLE_RATE % newSamleRate != 0) {
+            println("Downsample: Fail! Frequencies must be multiples of each other!")
+            return null
+        }
+
+        val step = SAMPLE_RATE / newSamleRate
+        val size = ceil(signal.size / step.toFloat()).toInt()
+        val newI = FloatArray(size)
+        val newQ = FloatArray(size)
+
+        for (k in 0..newI.lastIndex) {
+            newI[k] = signal.i[k * step]
+            newQ[k] = signal.q[k * step]
+        }
+
+        SAMPLE_RATE = newSamleRate
+
+        debugUtilities.timeStop()
+        return IQSamples(newI, newQ)
+    }
+
+    fun normalize(signal: IQSamples, max: Float = 1f, min: Float = -max): IQSamples? {
+        val debugUtilities = DebugUtilities("DataProcessor.normalize")
+        debugUtilities.timeStart()
+
+        val iMax = signal.i.maxOrNull() ?: return null
+        val qMax = signal.q.maxOrNull() ?: return null
+        val iMin = signal.i.minOrNull() ?: return null
+        val qMin = signal.q.minOrNull() ?: return null
+
+        val signalMax = if (iMax > qMax) iMax else qMax
+        val signalMim = if (iMin < qMin) iMin else qMin
+
+        val newI = FloatArray(signal.size)
+        val newQ = FloatArray(signal.size)
+
+        for (k in 0..signal.lastIndex) {
+            newI[k] = (signal.i[k] - signalMim) / (signalMax - signalMim) * abs(min - max) + min
+            newQ[k] = (signal.q[k] - signalMim) / (signalMax - signalMim) * abs(min - max) + min
+        }
+
+        debugUtilities.timeStop()
+        return IQSamples(newI, newQ)
     }
 
     private fun cutterByTime(signal: IQSamples, secsFrom: Float, secsTo: Float): IQSamples? {

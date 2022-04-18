@@ -1,6 +1,11 @@
 import kotlin.math.atan2
 
 class IQSamples(val i: FloatArray, val q: FloatArray) {
+
+    init {
+        if (i.size != q.size) throw Exception("The size of IQ signal component arrays must be the same")
+    }
+
     fun getIQ(index: Int) = Pair(i[index], q[index])
     fun getArrays() = Pair(i, q)
 
