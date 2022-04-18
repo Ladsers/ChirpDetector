@@ -34,4 +34,12 @@ object FcchInfo {
 
         return result
     }
+
+    fun applyFreqShift(midpoints: IntArray, freqShift: Float) {
+        val fcchCounts = DataProcessor.findIndexByTime(FCCH_DURATION_SECS)
+        val countsPerHz = fcchCounts / FCCH_FREQUENCY_RANGE.toFloat()
+        val countShift = (countsPerHz * freqShift).roundToInt()
+
+        for (i in 0..midpoints.lastIndex) midpoints[i] -= countShift
+    }
 }
