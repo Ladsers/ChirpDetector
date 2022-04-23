@@ -1,3 +1,4 @@
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 object Analyzer {
@@ -39,5 +40,33 @@ object Analyzer {
         }
 
         return list.toIntArray()
+    }
+
+    fun getHistogram(modelMidpoints: IntArray, signalMidpoints: IntArray, precision: Int = 10): Histogram {
+        if (modelMidpoints.size != signalMidpoints.size) throw Exception("The size of midpoints arrays must be the same")
+
+        val difference = IntArray(modelMidpoints.size)
+        for (i in 0..modelMidpoints.lastIndex) {
+            difference[i] = signalMidpoints[i] - modelMidpoints[i]
+        }
+
+        val differenceMs =
+            difference.map { DataProcessor.findTimeByIndex(it * 1000 * precision).roundToInt() }.toIntArray()
+        val differenceMsAbs = differenceMs.map { abs(it) }.toIntArray()
+        val max = differenceMsAbs.maxOrNull()!!
+
+        val timeList = mutableListOf<Float>()
+        val probabilitiesList = mutableListOf<Float>()
+
+        for (ms in -max..max) {
+            var counter = 0
+            for (diff in differenceMs) {
+                if (diff == ms) counter++
+            }
+            timeList.add(ms / precision.toFloat())
+            probabilitiesList.add(counter / modelMidpoints.size.toFloat())
+        }
+
+        return Histogram(timeList.toFloatArray(), probabilitiesList.toFloatArray())
     }
 }

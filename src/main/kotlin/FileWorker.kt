@@ -64,6 +64,32 @@ object FileWorker {
         return res
     }
 
+    fun writeHistogram(histogram: Histogram, filepath: String): Boolean {
+        val debugUtilities = DebugUtilities("FileWorker.writeHistogram")
+        debugUtilities.timeStart()
+
+        val timeList =
+            histogram.time.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+        val probabilitiesList =
+            histogram.probabilities.map { if (COMMA_INSTEAD_DOT) it.toString().replace('.', ',') else it.toString() }
+
+        val res = try {
+            val outStr = buildString {
+                for (k in 0..timeList.lastIndex) append(timeList[k] + '\t' + probabilitiesList[k] + '\n')
+            }
+            File(filepath).bufferedWriter().use { out -> out.write(outStr.dropLast(1)) }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            //TODO: сделать логи
+            false
+        }
+
+        debugUtilities.timeStop()
+        return res
+    }
+
     private fun readerBinary(filepath: String): IQSamples? {
         try {
             val fileInput = FileInputStream(filepath).channel

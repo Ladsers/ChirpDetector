@@ -68,6 +68,10 @@ object DataProcessor {
         return (secs * SAMPLE_RATE).toInt()
     }
 
+    fun findTimeByIndex(index: Int): Float {
+        return index / SAMPLE_RATE.toFloat()
+    }
+
     fun getDuration(signal: IQSamples): Float {
         return signal.size / SAMPLE_RATE.toFloat()
     }
